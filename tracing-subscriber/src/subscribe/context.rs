@@ -1,6 +1,9 @@
 use tracing_core::{collect::Collect, metadata::Metadata, span, Event};
 
-use crate::registry::{self, LookupSpan, SpanRef};
+use crate::{
+    fmt::{FmtContext, FormatFields},
+    registry::{self, LookupSpan, SpanRef},
+};
 
 #[cfg(all(feature = "registry", feature = "std"))]
 use crate::{filter::FilterId, registry::Registry};
@@ -422,6 +425,26 @@ impl<'a, S> Context<'a, S> {
 
             #[cfg(feature = "registry")]
             filter: FilterId::none(),
+        }
+    }
+
+    /// Returns a new `FmtContext` that can be used to format an event with anything
+    /// implementing [`FormatEvent`] using [`FormatEvent::format_event`].
+    ///
+    /// [`FormatEvent`]: crate::fmt::FormatEvent
+    /// [`FormatEvent::format_event`]: crate::fmt::FormatEvent::format_event
+    pub fn into_fmt_context<N>(
+        self,
+        fmt_fields: &'a N,
+        event: &'a Event<'a>,
+    ) -> FmtContext<'a, S, N>
+    where
+        N: for<'writer> FormatFields<'writer> + 'static,
+    {
+        FmtContext {
+            ctx: self,
+            fmt_fields,
+            event,
         }
     }
 }
